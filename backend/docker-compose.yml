@@ -29,6 +29,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       TELEGRAM_API_ID: ${TELEGRAM_API_ID}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+    ports:
+      - "8080:8080"
     volumes:
       - .:/workspace
       - gradle-cache:/home/gradle/.gradle

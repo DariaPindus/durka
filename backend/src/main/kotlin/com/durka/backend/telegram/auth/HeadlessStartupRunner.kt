@@ -1,8 +1,10 @@
 package com.durka.backend.telegram.auth
 
 import com.durka.backend.telegram.TdlibSettingsFactory
+import com.durka.backend.telegram.feed.FeedItemIngestor
 import com.durka.backend.telegram.repository.TelegramSessionStatusRepository
 import it.tdlight.client.AuthenticationSupplier
+import it.tdlight.client.SimpleTelegramClient
 import it.tdlight.client.SimpleTelegramClientFactory
 import it.tdlight.jni.TdApi
 import org.slf4j.LoggerFactory
@@ -28,6 +30,7 @@ class HeadlessStartupRunner(
     private val clientFactory: SimpleTelegramClientFactory,
     private val settingsFactory: TdlibSettingsFactory,
     private val sessionRepository: TelegramSessionStatusRepository,
+    private val feedItemIngestor: FeedItemIngestor,
 ) : ApplicationRunner {
 
     private val log = LoggerFactory.getLogger(HeadlessStartupRunner::class.java)
@@ -47,6 +50,11 @@ class HeadlessStartupRunner(
 
         val shutdownLatch = CountDownLatch(1)
 
+        // Read by the UpdateNewMessage handler below, only once an actual update arrives - which
+        // happens after builder.build() (a few lines down) has already assigned it. Kotlin doesn't
+        // allow `lateinit` on local variables, hence the nullable-plus-!! forward reference.
+        var clientRef: SimpleTelegramClient? = null
+
         builder.addUpdateHandler(TdApi.UpdateAuthorizationState::class.java) { update ->
             when (update.authorizationState) {
                 is TdApi.AuthorizationStateReady ->
@@ -60,7 +68,12 @@ class HeadlessStartupRunner(
             }
         }
 
+        builder.addUpdateHandler(TdApi.UpdateNewMessage::class.java) { update ->
+            feedItemIngestor.handle(clientRef!!, update)
+        }
+
         val client = builder.build(AuthenticationSupplier.user(existing.phoneNumber))
+        clientRef = client
 
         try {
             val me = client.getMeAsync().get(30, TimeUnit.SECONDS)

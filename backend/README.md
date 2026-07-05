@@ -1,8 +1,8 @@
 # Backend — Telegram userbot auth + infra slice
 
-Kotlin/Spring Boot backend, currently covering only: Postgres + Docker infra, and the
-one-time TDLib (userbot) login handshake with headless session reuse across restarts.
-No HTTP API yet.
+Kotlin/Spring Boot backend. Covers: Postgres + Docker infra, the one-time TDLib (userbot)
+login handshake with headless session reuse across restarts, a background listener that
+mirrors incoming Telegram messages into Postgres, and a first HTTP endpoint to read them back.
 
 ## Prerequisites
 
@@ -56,6 +56,10 @@ No HTTP API yet.
 docker compose up -d
 ```
 
+```
+docker compose up -d --build app 
+```
+
 Starts Postgres + the app headlessly, reusing the persisted session — no prompts. First run
 compiles inside the container (downloads the Gradle distribution, compiles Kotlin), so it
 takes a minute or two; watch it with:
@@ -67,6 +71,19 @@ docker compose logs -f app
 Expect a log line confirming the restored session (`Telegram session restored, authorization
 ready` / `Confirmed session for ...`). If instead you see "No Telegram session found", the
 one-time login step above hasn't succeeded yet.
+
+## Reading messages
+
+```bash
+curl "http://localhost:8080/api/messages/recent?limit=50"
+```
+
+Returns the last N messages (default 50, across all chats), grouped by chat type
+(`private`/`group`/`channel`) then by author within each group, newest first. Content is
+plain text only for now — non-text messages (photos, etc.) show up as a `(MessageXxx)`
+placeholder; rich formatting/media is a later pass. There's no read/unread tracking yet
+(the `is_seen` column exists in the schema but isn't used by this endpoint) and **no auth**
+on it — fine while it's only reachable from localhost, not once it's exposed further.
 
 ## Routine pause/resume
 

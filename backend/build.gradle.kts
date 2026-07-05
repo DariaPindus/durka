@@ -24,6 +24,7 @@ repositories {
 val tdlightVersion = "3.5.3+td.1.8.65"
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     // Spring Boot 4 modularized autoconfiguration: FlywayAutoConfiguration now lives in this
