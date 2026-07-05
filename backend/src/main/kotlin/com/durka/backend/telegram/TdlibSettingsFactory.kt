@@ -17,6 +17,13 @@ class TdlibSettingsFactory(private val properties: TelegramProperties) {
         val sessionDir = Paths.get(properties.databaseDirectory)
         settings.databaseDirectoryPath = sessionDir.resolve("data")
         settings.downloadedFilesDirectoryPath = sessionDir.resolve("downloads")
+        // This slice is pure auth-and-idle - no message ingestion yet. TDLibSettings.create()
+        // defaults all three to true, which makes tdlight-java auto-trigger a LoadChats() call
+        // as soon as authorization is Ready; that call failed in testing and appears to be what
+        // left the TDLib close handshake (closeAndWait()) hanging indefinitely afterward.
+        settings.isFileDatabaseEnabled = false
+        settings.isChatInfoDatabaseEnabled = false
+        settings.isMessageDatabaseEnabled = false
         return settings
     }
 }

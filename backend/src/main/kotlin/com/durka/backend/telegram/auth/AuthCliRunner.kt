@@ -48,11 +48,16 @@ class AuthCliRunner(
                 telegramUserId = me.id,
                 verifiedAt = Instant.now(),
             )
-            client.closeAndWait()
+            // sendClose() is fire-and-forget, unlike closeAndWait() - observed during
+            // implementation that closeAndWait() hangs indefinitely here (a TDLib-internal
+            // auto LoadChats() call on Ready fails and the close handshake never completes
+            // afterward), which would otherwise leave the container running forever even
+            // though the bookkeeping write above already succeeded.
+            client.sendClose()
             exitProcess(0)
         } catch (ex: Exception) {
             log.error("Authentication failed", ex)
-            client.closeAndWait()
+            client.sendClose()
             exitProcess(1)
         }
     }

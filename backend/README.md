@@ -29,8 +29,23 @@ No HTTP API yet.
 3. Run the one-time interactive login (needs a real terminal — prompts for phone number,
    login code, and 2FA password if enabled):
    ```bash
-   docker compose run --rm -it -e SPRING_PROFILES_ACTIVE=auth-cli app
+   docker compose run --rm -it -e SPRING_PROFILES_ACTIVE=auth-cli app \
+     bootRun --console=plain
    ```
+   Note: no leading `./gradlew` here — the `dev` image's `ENTRYPOINT` already is
+   `./gradlew`, so anything after the service name is passed as *arguments to* it, not a
+   replacement command. Repeating `./gradlew` makes Gradle try (and fail) to find a task
+   literally named `./gradlew`.
+
+   The command override matters here: the default `bootRun --continuous` is for the dev
+   loop, not a one-shot interactive login, and `--console=plain` avoids Gradle's rich
+   progress-bar UI visually interleaving with the phone/code/2FA prompts (both cosmetic
+   fixes). The important fix is already in `build.gradle.kts` — Gradle's `bootRun` task
+   doesn't forward the real terminal's stdin to the JVM by default, which without that fix
+   makes the prompts print but never receive what you type (looks like a stuck progress bar).
+
+   When asked `[token/phone/qr]`, type **phone** (qr requires scanning from another already
+   logged-in device, and isn't wired up here).
    On success it prints `Authenticated as <name> (id=<telegram_user_id>)` and exits 0. The
    session is persisted in the `tdlib_data` Docker volume — this step should only be needed
    once (see "Resetting" below for when you'd need to redo it).

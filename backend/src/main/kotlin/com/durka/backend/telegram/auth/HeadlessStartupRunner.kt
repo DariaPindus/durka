@@ -72,7 +72,10 @@ class HeadlessStartupRunner(
             )
         } catch (ex: Exception) {
             log.error("Failed to confirm existing Telegram session. Run the auth-cli profile again.", ex)
-            client.closeAndWait()
+            // sendClose() is fire-and-forget, unlike closeAndWait() - a hung/incomplete TDLib
+            // close handshake here must never block process exit (observed during implementation:
+            // a stuck closeAndWait() left the container running indefinitely instead of failing).
+            client.sendClose()
             exitProcess(1)
         }
 
@@ -81,7 +84,7 @@ class HeadlessStartupRunner(
         // once startup work is done - see plan notes on the "no web server -> exits immediately" gotcha.
         Runtime.getRuntime().addShutdownHook(
             Thread {
-                client.closeAndWait()
+                client.sendClose()
                 shutdownLatch.countDown()
             }
         )
