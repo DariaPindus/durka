@@ -1,0 +1,22 @@
+package com.durka.backend.telegram
+
+import it.tdlight.client.APIToken
+import it.tdlight.client.TDLibSettings
+import org.springframework.stereotype.Component
+import java.nio.file.Paths
+
+@Component
+class TdlibSettingsFactory(private val properties: TelegramProperties) {
+
+    // tdlight-java's TDLibSettings has no database-encryption-key setter (verified against its source) -
+    // the local session directory is unencrypted at the TDLib layer. It's isolated instead via a named
+    // Docker volume (never a host bind mount) plus whatever host-level disk encryption is in place.
+    fun create(): TDLibSettings {
+        val apiToken = APIToken(properties.apiId, properties.apiHash)
+        val settings = TDLibSettings.create(apiToken)
+        val sessionDir = Paths.get(properties.databaseDirectory)
+        settings.databaseDirectoryPath = sessionDir.resolve("data")
+        settings.downloadedFilesDirectoryPath = sessionDir.resolve("downloads")
+        return settings
+    }
+}

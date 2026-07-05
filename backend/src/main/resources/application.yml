@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: backend
+  main:
+    web-application-type: none
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  flyway:
+    enabled: true
+
+telegram:
+  api-id: ${TELEGRAM_API_ID}
+  api-hash: ${TELEGRAM_API_HASH}
+  database-directory: /data/tdlib
+
+logging:
+  level:
+    com.durka.backend: INFO
