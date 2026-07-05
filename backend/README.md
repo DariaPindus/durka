@@ -75,15 +75,29 @@ one-time login step above hasn't succeeded yet.
 ## Reading messages
 
 ```bash
-curl "http://localhost:8080/api/messages/recent?limit=50"
+curl "http://localhost:8080/api/messages/recent?limit=50&token=$FEED_API_TOKEN"
 ```
 
 Returns the last N messages (default 50, across all chats), grouped by chat type
 (`private`/`group`/`channel`) then by author within each group, newest first. Content is
 plain text only for now — non-text messages (photos, etc.) show up as a `(MessageXxx)`
 placeholder; rich formatting/media is a later pass. There's no read/unread tracking yet
-(the `is_seen` column exists in the schema but isn't used by this endpoint) and **no auth**
-on it — fine while it's only reachable from localhost, not once it's exposed further.
+(the `is_seen` column exists in the schema but isn't used by this endpoint).
+
+`GET /api/ping` is unauthenticated (a plain connectivity check); everything under
+`/api/messages/*` requires the token above, either as a `?token=` query param (what a
+bookmarked Opera Mini URL will use — no cookies, no JS, no login form) or an
+`Authorization: Bearer <token>` header. Generate the token with `openssl rand -hex 32` and
+put it in `.env` as `FEED_API_TOKEN`. It's a single shared capability token, not a per-user
+login — read-only scope, meant to be rotated periodically once this is reachable beyond
+localhost.
+
+Every request to `/api/messages/*` (valid token or not) is logged to `feed_access_log`
+(IP, user-agent, timestamp, whether the token was valid) — this doesn't alert on anything
+yet, it's just the data a future "notify me if a new device uses this token" feature would
+need. Note: without a reverse proxy in front yet, the logged IP is Docker's internal gateway
+address, not a real client IP — that starts working once a real reverse proxy (Caddy/nginx
+per the project brief) sets `X-Forwarded-For`, with no code change needed here.
 
 ## Routine pause/resume
 

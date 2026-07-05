@@ -13,6 +13,9 @@ telegram:
   api-hash: ${TELEGRAM_API_HASH}
   database-directory: /data/tdlib
 
+feed:
+  token: ${FEED_API_TOKEN}
+
 logging:
   level:
     com.durka.backend: INFO
