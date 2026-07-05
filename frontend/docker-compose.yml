@@ -1,0 +1,23 @@
+name: durka-frontend
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    environment:
+      PORT: 3000
+      # host.docker.internal resolves to the Docker host from inside the container (works
+      # out of the box on Docker Desktop for Mac/Windows, which is this dev setup) - lets
+      # this container reach the backend's separately-run compose project without joining
+      # its network.
+      BACKEND_URL: http://host.docker.internal:8080
+      FEED_API_TOKEN: ${FEED_API_TOKEN}
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/workspace
+      - node_modules:/workspace/node_modules
+
+volumes:
+  node_modules:

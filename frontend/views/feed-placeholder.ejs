@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+</head>
+<body>
+<p>Modern UI not built yet - this route currently only serves the Opera Mini legacy
+render. Loaded <%= groups.reduce((n, g) => n + g.authors.reduce((m, a) => m + a.messages.length, 0), 0) %>
+messages from the backend to prove the branch works.</p>
+</body>
+</html>
