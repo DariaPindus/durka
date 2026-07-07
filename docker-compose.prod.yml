@@ -1,0 +1,72 @@
+name: durka-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      retries: 10
+    # No "ports:" - only reachable by other services on the internal compose network,
+    # never from the host or the internet. This is the fix for the dev compose file
+    # publishing 5432 to 0.0.0.0.
+
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+      FEED_API_TOKEN: ${FEED_API_TOKEN}
+    volumes:
+      - tdlib_data:/data/tdlib
+    # No "ports:" either - same reasoning as postgres. Only `frontend` calls this, over
+    # the internal network by service name (http://backend:8080), never host.docker.internal.
+
+  frontend:
+    build:
+      context: ./frontend
+      target: runtime
+    depends_on:
+      - backend
+    environment:
+      PORT: 3000
+      BACKEND_URL: http://backend:8080
+      FEED_API_TOKEN: ${FEED_API_TOKEN}
+    # No "ports:" - only Caddy reaches this, internally. The public internet never talks
+    # to the frontend directly, only through the reverse proxy below.
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    # The ONLY service in this file with published ports - everything else is reached
+    # exclusively over the internal Docker network Compose creates for this project.
+
+volumes:
+  postgres_data:
+  tdlib_data:
+  caddy_data:
+  caddy_config:
