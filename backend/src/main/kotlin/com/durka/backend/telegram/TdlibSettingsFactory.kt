@@ -26,4 +26,16 @@ class TdlibSettingsFactory(private val properties: TelegramProperties) {
         settings.isMessageDatabaseEnabled = false
         return settings
     }
+
+    /**
+     * Clears just TDLib's session/database files (not downloads, not the volume itself) so the
+     * next client build starts fresh - needed when a session is logged out remotely (e.g. from
+     * within Telegram's own "active sessions" list): TDLib's local binlog doesn't know that
+     * happened, so it resumes straight to Ready before the first real API call reveals the
+     * session is actually dead. Scoped to the "data" subdirectory only, so a plain volume mount
+     * (not a fresh volume) is all that's needed to recover.
+     */
+    fun clearSessionData() {
+        Paths.get(properties.databaseDirectory).resolve("data").toFile().deleteRecursively()
+    }
 }

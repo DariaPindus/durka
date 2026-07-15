@@ -77,6 +77,18 @@ class HeadlessStartupRunner(
 
         try {
             val me = client.getMeAsync().get(30, TimeUnit.SECONDS)
+            if (me == null) {
+                // Same stale-session case as AuthCliRunner: Ready locally, but the first real API
+                // call reveals the session was actually ended remotely. Clear it here too so the
+                // next auth-cli run doesn't also need a manual volume wipe.
+                log.error(
+                    "Existing session is invalid (likely logged out remotely) - clearing stale " +
+                        "local session data. Run the auth-cli profile again to log in fresh."
+                )
+                client.sendClose()
+                settingsFactory.clearSessionData()
+                exitProcess(1)
+            }
             log.info("Confirmed session for {} {} (id={})", me.firstName, me.lastName, me.id)
             sessionRepository.upsertReady(
                 phoneNumber = me.phoneNumber,

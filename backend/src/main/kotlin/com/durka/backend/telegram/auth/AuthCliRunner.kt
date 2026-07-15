@@ -42,6 +42,20 @@ class AuthCliRunner(
 
         try {
             val me = client.getMeAsync().get(10, TimeUnit.MINUTES)
+            if (me == null) {
+                // TDLib can report AuthorizationStateReady from a stale local session (e.g. one
+                // ended remotely via Telegram's own "active sessions" list) before the first real
+                // API call reveals it's actually dead - GetMe completes with null rather than an
+                // exception in that case. Clearing just the session data (not the whole volume)
+                // means the operator can simply re-run this same command to get a real fresh login.
+                log.error(
+                    "Session is invalid (likely logged out remotely) - clearing stale local " +
+                        "session data. Re-run this command to log in fresh."
+                )
+                client.sendClose()
+                settingsFactory.clearSessionData()
+                exitProcess(1)
+            }
             log.info("Authenticated as {} {} (id={})", me.firstName, me.lastName, me.id)
             sessionRepository.upsertReady(
                 phoneNumber = me.phoneNumber,
