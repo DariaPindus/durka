@@ -53,18 +53,29 @@ class FeedItemRepository(private val jdbcTemplate: NamedParameterJdbcTemplate) {
     }
 
     /**
-     * Latest N messages regardless of is_seen - read/unread tracking is deferred, this just
-     * serves a simple "last N" feed for now (is_seen stays in the schema, unused, for later).
+     * Latest N messages per (chat_type, author) group, regardless of is_seen - read/unread
+     * tracking is deferred (is_seen stays in the schema, unused, for later). Per-group rather
+     * than an overall top-N so a handful of very active chats can't crowd quieter ones out of
+     * the result entirely - ROW_NUMBER() partitioned by the same (chat_type, author) key the
+     * controller groups by gives an exact top-N per group directly from the DB, rather than
+     * approximating it by over-fetching and truncating in application code.
      */
-    fun findRecent(limit: Int): List<FeedItemRow> =
+    fun findRecent(limitPerGroup: Int): List<FeedItemRow> =
         jdbcTemplate.query(
             """
             SELECT id, external_id, chat_type, from_display_name, from_username, occurred_at, text
-            FROM feed_item
+            FROM (
+                SELECT *,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY chat_type
+                           ORDER BY occurred_at DESC
+                       ) AS rn
+                FROM feed_item
+            ) ranked
+            WHERE rn <= :limitPerGroup
             ORDER BY occurred_at DESC
-            LIMIT :limit
             """.trimIndent(),
-            MapSqlParameterSource("limit", limit),
+            MapSqlParameterSource("limitPerGroup", limitPerGroup),
         ) { rs, _ ->
             FeedItemRow(
                 id = rs.getLong("id"),

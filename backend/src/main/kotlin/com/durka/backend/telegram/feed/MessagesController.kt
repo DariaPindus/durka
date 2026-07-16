@@ -23,15 +23,17 @@ data class ChatTypeGroupDto(
 )
 
 /**
- * No auth on this yet - fine for local/dev use, but a gap to close before this is reachable
- * from anywhere but localhost (see the broader project brief's capability-token auth design).
+ * Token auth on requests under /api/messages is enforced by FeedAccessFilter (see
+ * FeedSecurityConfig), not here - keeps this controller free of auth concerns for any
+ * future endpoint added under the same path.
  */
 @RestController
 @RequestMapping("/api/messages")
 class MessagesController(private val feedItemRepository: FeedItemRepository) {
 
     @GetMapping("/recent")
-    fun recent(@RequestParam(defaultValue = "50") limit: Int): List<ChatTypeGroupDto> {
+    fun recent(@RequestParam(defaultValue = "20") limit: Int): List<ChatTypeGroupDto> {
+        // limit is per author group (see FeedItemRepository.findRecent), not an overall cap.
         val items = feedItemRepository.findRecent(limit)
 
         return items
