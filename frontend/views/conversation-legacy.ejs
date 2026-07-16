@@ -8,20 +8,24 @@ p { margin: 2px 0 6px; }
 .ts { color: #666; font-size: 12px; }
 .theirs { color: #006; }
 .mine { color: #060; text-align: right; }
+.from { color: #666; }
 a { color: #009; }
 </style>
 </head>
 <body>
-<p><a href="/?token=<%= encodeURIComponent(token) %>">&lt; back</a></p>
+<p><a href="/telegram?token=<%= encodeURIComponent(token) %>">&lt; back</a></p>
+<h2><%= title || "Conversation" %></h2>
 <% messages.forEach(function(message) { %>
   <p class="<%= message.outgoing ? 'mine' : 'theirs' %>">
     <span class="ts"><%= message.timestamp %></span><br>
-    <% if (message.outgoing) { %>You: <% } %><%= message.text %>
+    <% if (message.outgoing) { %>You: <% } else if (chatType !== 'private' && message.fromDisplayName) { %><span class="from"><%= message.fromDisplayName %>: </span><% } %><%= message.text %>
   </p>
 <% }); %>
-<form method="POST" action="/feed/<%= chatId %>/reply?token=<%= encodeURIComponent(token) %>">
+<% if (canReply) { %>
+<form method="POST" action="/telegram/feed/<%= chatId %>/reply?token=<%= encodeURIComponent(token) %>">
   <input type="text" name="text" size="20">
   <input type="submit" value="Send">
 </form>
+<% } %>
 </body>
 </html>

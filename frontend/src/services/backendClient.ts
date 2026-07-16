@@ -19,6 +19,7 @@ export interface ChatTypeGroupDto {
 
 export interface SenderSummaryDto {
   chatId: number;
+  chatType: "private" | "group" | "channel";
   displayName: string | null;
   username: string | null;
   lastMessageAt: string;
@@ -33,6 +34,15 @@ export interface ConversationMessageDto {
   timestamp: string;
   text: string;
   outgoing: boolean;
+  fromDisplayName: string | null;
+}
+
+export interface ConversationDto {
+  chatId: number;
+  chatType: "private" | "group" | "channel";
+  title: string | null;
+  canReply: boolean;
+  messages: ConversationMessageDto[];
 }
 
 /**
@@ -67,9 +77,9 @@ export async function fetchRecentSenders(limit: number): Promise<SenderSummaryDt
   return response.json() as Promise<SenderSummaryDto[]>;
 }
 
-export async function fetchConversation(chatId: number, limit: number): Promise<ConversationMessageDto[]> {
+export async function fetchConversation(chatId: number, limit: number): Promise<ConversationDto> {
   const response = await backendFetch(`/api/messages/senders/${chatId}`, { limit: String(limit) });
-  return response.json() as Promise<ConversationMessageDto[]>;
+  return response.json() as Promise<ConversationDto>;
 }
 
 export async function sendReply(chatId: number, text: string): Promise<ConversationMessageDto> {

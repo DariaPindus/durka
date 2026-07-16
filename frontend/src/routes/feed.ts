@@ -4,7 +4,7 @@ import { transliterate } from "../services/translit";
 
 export const feedRouter = Router();
 
-feedRouter.get("/", async (req, res, next) => {
+feedRouter.get("/telegram", async (req, res, next) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const senders = await fetchRecentSenders(limit);

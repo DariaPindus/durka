@@ -24,6 +24,7 @@ object TelegramMessageMapper {
         chatCategory: ChatCategory,
         fromDisplayName: String?,
         fromUsername: String?,
+        chatTitle: String? = null,
     ): NewFeedItem = NewFeedItem(
         externalId = "tg:${message.chatId}:${message.id}",
         chatId = message.chatId,
@@ -34,6 +35,7 @@ object TelegramMessageMapper {
         occurredAt = Instant.ofEpochSecond(message.date.toLong()),
         text = extractText(message.content),
         isOutgoing = message.isOutgoing,
+        chatTitle = chatTitle,
     )
 
     fun resolveUserName(client: SimpleTelegramClient, userId: Long): CompletableFuture<Pair<String?, String?>> =

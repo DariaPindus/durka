@@ -4,20 +4,32 @@ import { transliterate } from "../services/translit";
 
 export const conversationRouter = Router();
 
-conversationRouter.get("/feed/:chatId", async (req, res, next) => {
+conversationRouter.get("/telegram/feed/:chatId", async (req, res, next) => {
   try {
     const chatId = Number(req.params.chatId);
-    const limit = Number(req.query.limit) || 20;
-    const messages = await fetchConversation(chatId, limit);
+    const limit = Number(req.query.limit) || 25;
+    const conversation = await fetchConversation(chatId, limit);
     const token = String(req.query.token ?? "");
 
     res.set("Cache-Control", "no-store");
 
+    const viewModel = {
+      chatId,
+      chatType: conversation.chatType,
+      title: conversation.title,
+      canReply: conversation.canReply,
+      token,
+    };
+
     if (req.isLegacyClient) {
-      const transliterated = messages.map((message) => ({ ...message, text: transliterate(message.text) }));
-      res.render("conversation-legacy", { chatId, messages: transliterated, token });
+      const messages = conversation.messages.map((message) => ({
+        ...message,
+        text: transliterate(message.text),
+        fromDisplayName: message.fromDisplayName ? transliterate(message.fromDisplayName) : message.fromDisplayName,
+      }));
+      res.render("conversation-legacy", { ...viewModel, title: conversation.title ? transliterate(conversation.title) : conversation.title, messages });
     } else {
-      res.render("conversation-placeholder", { chatId, messages, token });
+      res.render("conversation-placeholder", { ...viewModel, messages: conversation.messages });
     }
   } catch (err) {
     next(err);
@@ -26,7 +38,7 @@ conversationRouter.get("/feed/:chatId", async (req, res, next) => {
 
 // Plain HTML form POST (no fetch/AJAX) so this works on the JS-less legacy client too -
 // redirect-after-POST back to the same conversation avoids a resubmit-on-refresh prompt.
-conversationRouter.post("/feed/:chatId/reply", async (req, res, next) => {
+conversationRouter.post("/telegram/feed/:chatId/reply", async (req, res, next) => {
   try {
     const chatId = Number(req.params.chatId);
     const token = String(req.query.token ?? "");
@@ -36,7 +48,7 @@ conversationRouter.post("/feed/:chatId/reply", async (req, res, next) => {
       await sendReply(chatId, text);
     }
 
-    res.redirect(`/feed/${chatId}?token=${encodeURIComponent(token)}`);
+    res.redirect(`/telegram/feed/${chatId}?token=${encodeURIComponent(token)}`);
   } catch (err) {
     next(err);
   }

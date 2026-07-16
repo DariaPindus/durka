@@ -8,13 +8,15 @@ h2 { font-size: 16px; margin: 14px 0 2px; }
 a { color: #06c; text-decoration: none; }
 a:hover { text-decoration: underline; }
 .ts { color: #666; font-size: 12px; }
+.type { color: #999; font-size: 12px; text-transform: uppercase; }
 .note { color: #900; font-size: 12px; }
 </style>
 </head>
 <body>
 <p class="note">Debug view - temporarily rendering full content for the modern client path (no transliteration, real React UI comes later).</p>
+<p><a href="/?token=<%= encodeURIComponent(token) %>">&larr; sources</a></p>
 <% senders.forEach(function(sender) { %>
-  <h2><a href="/feed/<%= sender.chatId %>?token=<%= encodeURIComponent(token) %>"><%= sender.displayName || sender.username || "Unknown" %></a></h2>
+  <h2><a href="/telegram/feed/<%= sender.chatId %>?token=<%= encodeURIComponent(token) %>"><%= sender.displayName || sender.username || "Unknown" %></a> <span class="type"><%= sender.chatType %></span></h2>
   <p class="ts"><%= sender.lastMessageAt %></p>
 <% }); %>
 </body>

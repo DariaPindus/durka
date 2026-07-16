@@ -6,12 +6,13 @@
 body { font-family: sans-serif; font-size: 14px; max-width: 700px; margin: 0 auto; padding: 12px; }
 .note { color: #900; font-size: 12px; }
 a { color: #06c; }
-.row { display: flex; margin: 6px 0; }
-.row.mine { justify-content: flex-end; }
-.row.theirs { justify-content: flex-start; }
+.row { display: flex; margin: 6px 0; flex-direction: column; }
+.row.mine { align-items: flex-end; }
+.row.theirs { align-items: flex-start; }
 .bubble { max-width: 75%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; }
 .row.mine .bubble { background: #cdeccd; }
 .row.theirs .bubble { background: #eee; }
+.from { display: block; font-size: 11px; color: #666; margin-bottom: 2px; }
 .ts { display: block; color: #666; font-size: 11px; margin-top: 4px; }
 form { margin-top: 16px; display: flex; gap: 8px; }
 input[type="text"] { flex: 1; padding: 6px; }
@@ -19,18 +20,22 @@ input[type="text"] { flex: 1; padding: 6px; }
 </head>
 <body>
 <p class="note">Debug view - temporarily rendering full content for the modern client path (real React UI comes later).</p>
-<p><a href="/?token=<%= encodeURIComponent(token) %>">&larr; back to senders</a></p>
+<p><a href="/telegram?token=<%= encodeURIComponent(token) %>">&larr; back to senders</a></p>
+<h1><%= title || "Conversation" %></h1>
 <% messages.forEach(function(message) { %>
   <div class="row <%= message.outgoing ? 'mine' : 'theirs' %>">
     <div class="bubble">
+      <% if (!message.outgoing && chatType !== 'private' && message.fromDisplayName) { %><span class="from"><%= message.fromDisplayName %></span><% } %>
       <%= message.text %>
       <span class="ts"><%= message.timestamp %></span>
     </div>
   </div>
 <% }); %>
-<form method="POST" action="/feed/<%= chatId %>/reply?token=<%= encodeURIComponent(token) %>">
+<% if (canReply) { %>
+<form method="POST" action="/telegram/feed/<%= chatId %>/reply?token=<%= encodeURIComponent(token) %>">
   <input type="text" name="text" placeholder="Type a reply...">
   <input type="submit" value="Send">
 </form>
+<% } %>
 </body>
 </html>

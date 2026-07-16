@@ -16,6 +16,7 @@ data class NewFeedItem(
     val occurredAt: Instant,
     val text: String,
     val isOutgoing: Boolean = false,
+    val chatTitle: String? = null,
 )
 
 data class FeedItemRow(
@@ -31,6 +32,7 @@ data class FeedItemRow(
 
 data class SenderSummaryRow(
     val chatId: Long,
+    val chatType: ChatCategory,
     val displayName: String?,
     val username: String?,
     val lastMessageAt: Instant,
@@ -51,11 +53,12 @@ class FeedItemRepository(private val jdbcTemplate: NamedParameterJdbcTemplate) {
             .addValue("occurredAt", Timestamp.from(item.occurredAt))
             .addValue("text", item.text)
             .addValue("isOutgoing", item.isOutgoing)
+            .addValue("chatTitle", item.chatTitle)
 
         jdbcTemplate.update(
             """
-            INSERT INTO feed_item (external_id, chat_id, message_id, chat_type, from_display_name, from_username, occurred_at, text, is_outgoing)
-            VALUES (:externalId, :chatId, :messageId, :chatType, :fromDisplayName, :fromUsername, :occurredAt, :text, :isOutgoing)
+            INSERT INTO feed_item (external_id, chat_id, message_id, chat_type, from_display_name, from_username, occurred_at, text, is_outgoing, chat_title)
+            VALUES (:externalId, :chatId, :messageId, :chatType, :fromDisplayName, :fromUsername, :occurredAt, :text, :isOutgoing, :chatTitle)
             ON CONFLICT (chat_id, message_id) DO NOTHING
             """.trimIndent(),
             params,
@@ -64,8 +67,8 @@ class FeedItemRepository(private val jdbcTemplate: NamedParameterJdbcTemplate) {
 
     /**
      * Latest N messages per chat_type group, excluding our own outgoing messages - this is the
-     * "what did people send me" view, unaffected by the private-conversation reply feature
-     * (see findMessagesForChat, which is the only place outgoing messages are shown).
+     * "what did people send me" view, unaffected by the conversation reply feature (see
+     * findMessagesForChat, which is the only place outgoing messages are shown).
      */
     fun findRecent(limitPerGroup: Int): List<FeedItemRow> =
         jdbcTemplate.query(
@@ -87,19 +90,22 @@ class FeedItemRepository(private val jdbcTemplate: NamedParameterJdbcTemplate) {
         ) { rs, _ -> mapRow(rs) }
 
     /**
-     * The N most recently-active private conversations, one row per chat_id (its most recent
-     * message, whichever direction). Private only, per the reply feature's scope - chat_id here
-     * doubles as the id you'd send a reply to, since a private chat_id unambiguously identifies
-     * the conversation with that one person.
+     * The N most recently-active conversations across all chat types, one row per chat_id (its
+     * most recent message). For private chats, the counterpart's name (from_display_name/
+     * from_username) is the natural conversation label; for group/channel, that column instead
+     * holds whoever posted last, which isn't a useful "conversation name" - chat_title (the
+     * chat's own name, resolved once per chat, not per message) is used there instead.
      */
     fun findRecentSenders(limit: Int): List<SenderSummaryRow> =
         jdbcTemplate.query(
             """
-            SELECT chat_id, from_display_name, from_username, occurred_at
+            SELECT chat_id, chat_type,
+                   CASE WHEN chat_type = 'PRIVATE' THEN from_display_name ELSE chat_title END AS display_name,
+                   CASE WHEN chat_type = 'PRIVATE' THEN from_username ELSE NULL END AS username,
+                   occurred_at
             FROM (
-                SELECT DISTINCT ON (chat_id) chat_id, from_display_name, from_username, occurred_at
+                SELECT DISTINCT ON (chat_id) chat_id, chat_type, from_display_name, from_username, chat_title, occurred_at
                 FROM feed_item
-                WHERE chat_type = 'PRIVATE'
                 ORDER BY chat_id, occurred_at DESC
             ) latest
             ORDER BY occurred_at DESC
@@ -109,8 +115,9 @@ class FeedItemRepository(private val jdbcTemplate: NamedParameterJdbcTemplate) {
         ) { rs, _ ->
             SenderSummaryRow(
                 chatId = rs.getLong("chat_id"),
-                displayName = rs.getString("from_display_name"),
-                username = rs.getString("from_username"),
+                chatType = ChatCategory.valueOf(rs.getString("chat_type")),
+                displayName = rs.getString("display_name"),
+                username = rs.getString("username"),
                 lastMessageAt = rs.getTimestamp("occurred_at").toInstant(),
             )
         }

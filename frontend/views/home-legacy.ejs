@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; }
+h2 { font-size: 15px; margin: 10px 0 2px; }
+a { color: #009; }
+</style>
+</head>
+<body>
+<% sources.forEach(function(source) { %>
+  <h2><a href="<%= source.path %>?token=<%= encodeURIComponent(token) %>"><%= source.name %></a></h2>
+<% }); %>
+</body>
+</html>

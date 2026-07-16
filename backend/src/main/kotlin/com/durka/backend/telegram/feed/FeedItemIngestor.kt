@@ -24,21 +24,23 @@ class FeedItemIngestor(private val feedItemRepository: FeedItemRepository) {
             val chatCategory = ChatCategory.from(chat.type)
             // For a private chat, always resolve the OTHER person - not message.senderId, which
             // is ourselves for our own outgoing messages. chat.type.userId is who this
-            // conversation is with regardless of message direction; that's what the reply
-            // feature's sender list/thread view need, not whoever happened to send this message.
+            // conversation is with regardless of message direction. For group/channel, resolve
+            // the individual sender of THIS message (many different people post in a group,
+            // unlike a private chat's fixed counterpart) plus the chat's own title, used as the
+            // conversation label in the senders list instead of "whoever posted last".
             val fromFuture = if (chatCategory == ChatCategory.PRIVATE) {
                 TelegramMessageMapper.resolveUserName(client, (chat.type as TdApi.ChatTypePrivate).userId)
             } else {
                 TelegramMessageMapper.resolveSenderName(client, message.senderId)
             }
-            fromFuture.thenApply { from -> chatCategory to from }
+            fromFuture.thenApply { from -> Triple(chatCategory, from, chat.title) }
         }
 
         resolved.whenCompleteAsync { result, error ->
             if (error != null) {
                 log.warn("Could not resolve chat/sender info for chat {} message {}", message.chatId, message.id, error)
             }
-            val (chatCategory, from) = result ?: (ChatCategory.PRIVATE to null)
+            val (chatCategory, from, chatTitle) = result ?: Triple(ChatCategory.PRIVATE, null, null)
 
             // Our own messages are only kept for private conversations (the reply feature's
             // thread view needs both sides) - group/channel posts we sent stay excluded, same
@@ -46,7 +48,15 @@ class FeedItemIngestor(private val feedItemRepository: FeedItemRepository) {
             if (message.isOutgoing && chatCategory != ChatCategory.PRIVATE) return@whenCompleteAsync
 
             val (displayName, username) = from ?: (null to null)
-            feedItemRepository.insert(TelegramMessageMapper.toNewFeedItem(message, chatCategory, displayName, username))
+            feedItemRepository.insert(
+                TelegramMessageMapper.toNewFeedItem(
+                    message = message,
+                    chatCategory = chatCategory,
+                    fromDisplayName = displayName,
+                    fromUsername = username,
+                    chatTitle = if (chatCategory == ChatCategory.PRIVATE) null else chatTitle,
+                )
+            )
         }
     }
 }

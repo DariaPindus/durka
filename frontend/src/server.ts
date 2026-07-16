@@ -5,6 +5,7 @@ import { detectClient } from "./middleware/detectClient";
 import { requireToken } from "./middleware/requireToken";
 import { conversationRouter } from "./routes/conversation";
 import { feedRouter } from "./routes/feed";
+import { homeRouter } from "./routes/home";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.set("views", path.join(process.cwd(), "views"));
 app.use(express.urlencoded({ extended: false }));
 
 app.use(detectClient);
+app.use("/", requireToken, homeRouter);
 app.use("/", requireToken, feedRouter);
 app.use("/", requireToken, conversationRouter);
 
