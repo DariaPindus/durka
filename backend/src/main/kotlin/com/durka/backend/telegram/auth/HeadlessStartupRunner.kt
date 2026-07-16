@@ -1,6 +1,7 @@
 package com.durka.backend.telegram.auth
 
 import com.durka.backend.telegram.TdlibSettingsFactory
+import com.durka.backend.telegram.TelegramClientHolder
 import com.durka.backend.telegram.feed.FeedItemIngestor
 import com.durka.backend.telegram.repository.TelegramSessionStatusRepository
 import it.tdlight.client.AuthenticationSupplier
@@ -31,6 +32,7 @@ class HeadlessStartupRunner(
     private val settingsFactory: TdlibSettingsFactory,
     private val sessionRepository: TelegramSessionStatusRepository,
     private val feedItemIngestor: FeedItemIngestor,
+    private val telegramClientHolder: TelegramClientHolder,
 ) : ApplicationRunner {
 
     private val log = LoggerFactory.getLogger(HeadlessStartupRunner::class.java)
@@ -74,6 +76,7 @@ class HeadlessStartupRunner(
 
         val client = builder.build(AuthenticationSupplier.user(existing.phoneNumber))
         clientRef = client
+        telegramClientHolder.set(client)
 
         try {
             val me = client.getMeAsync().get(30, TimeUnit.SECONDS)

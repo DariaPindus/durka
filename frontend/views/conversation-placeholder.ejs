@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; max-width: 700px; margin: 0 auto; padding: 12px; }
+.note { color: #900; font-size: 12px; }
+a { color: #06c; }
+.row { display: flex; margin: 6px 0; }
+.row.mine { justify-content: flex-end; }
+.row.theirs { justify-content: flex-start; }
+.bubble { max-width: 75%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; }
+.row.mine .bubble { background: #cdeccd; }
+.row.theirs .bubble { background: #eee; }
+.ts { display: block; color: #666; font-size: 11px; margin-top: 4px; }
+form { margin-top: 16px; display: flex; gap: 8px; }
+input[type="text"] { flex: 1; padding: 6px; }
+</style>
+</head>
+<body>
+<p class="note">Debug view - temporarily rendering full content for the modern client path (real React UI comes later).</p>
+<p><a href="/?token=<%= encodeURIComponent(token) %>">&larr; back to senders</a></p>
+<% messages.forEach(function(message) { %>
+  <div class="row <%= message.outgoing ? 'mine' : 'theirs' %>">
+    <div class="bubble">
+      <%= message.text %>
+      <span class="ts"><%= message.timestamp %></span>
+    </div>
+  </div>
+<% }); %>
+<form method="POST" action="/feed/<%= chatId %>/reply?token=<%= encodeURIComponent(token) %>">
+  <input type="text" name="text" placeholder="Type a reply...">
+  <input type="submit" value="Send">
+</form>
+</body>
+</html>

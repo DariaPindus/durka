@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; }
+p { margin: 2px 0 6px; }
+.ts { color: #666; font-size: 12px; }
+.theirs { color: #006; }
+.mine { color: #060; text-align: right; }
+a { color: #009; }
+</style>
+</head>
+<body>
+<p><a href="/?token=<%= encodeURIComponent(token) %>">&lt; back</a></p>
+<% messages.forEach(function(message) { %>
+  <p class="<%= message.outgoing ? 'mine' : 'theirs' %>">
+    <span class="ts"><%= message.timestamp %></span><br>
+    <% if (message.outgoing) { %>You: <% } %><%= message.text %>
+  </p>
+<% }); %>
+<form method="POST" action="/feed/<%= chatId %>/reply?token=<%= encodeURIComponent(token) %>">
+  <input type="text" name="text" size="20">
+  <input type="submit" value="Send">
+</form>
+</body>
+</html>

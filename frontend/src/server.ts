@@ -3,6 +3,7 @@ import path from "path";
 import { config } from "./config";
 import { detectClient } from "./middleware/detectClient";
 import { requireToken } from "./middleware/requireToken";
+import { conversationRouter } from "./routes/conversation";
 import { feedRouter } from "./routes/feed";
 
 const app = express();
@@ -10,8 +11,13 @@ const app = express();
 app.set("view engine", "ejs");
 app.set("views", path.join(process.cwd(), "views"));
 
+// Needed for the reply form's plain HTML POST (application/x-www-form-urlencoded) - no
+// fetch/AJAX, so this is what actually carries the submitted text to the route handler.
+app.use(express.urlencoded({ extended: false }));
+
 app.use(detectClient);
 app.use("/", requireToken, feedRouter);
+app.use("/", requireToken, conversationRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

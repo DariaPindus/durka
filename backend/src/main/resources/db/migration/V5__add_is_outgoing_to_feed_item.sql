@@ -1,0 +1,1 @@
+ALTER TABLE feed_item ADD COLUMN is_outgoing BOOLEAN NOT NULL DEFAULT false;
