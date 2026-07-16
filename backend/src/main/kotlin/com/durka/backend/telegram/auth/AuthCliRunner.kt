@@ -70,8 +70,15 @@ class AuthCliRunner(
             client.sendClose()
             exitProcess(0)
         } catch (ex: Exception) {
-            log.error("Authentication failed", ex)
+            // Covers the case the null-check above doesn't: if the client enters LoggingOut,
+            // GetMe can just hang (never completes, not even with null) until this call times
+            // out instead - e.g. a TimeoutException here, not a clean null result. Since this
+            // tool's whole job is establishing a working session, any failure at this point
+            // means the next attempt should start from a clean slate rather than leave stale
+            // data behind to repeat the same failure indefinitely.
+            log.error("Authentication failed - clearing stale local session data so the next attempt starts fresh.", ex)
             client.sendClose()
+            settingsFactory.clearSessionData()
             exitProcess(1)
         }
     }
