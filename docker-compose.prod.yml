@@ -54,7 +54,8 @@ services:
     # to the frontend directly, only through the reverse proxy below.
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: ./caddy
     restart: unless-stopped
     environment:
       DOMAIN: ${DOMAIN}

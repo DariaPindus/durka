@@ -1,3 +1,20 @@
+{
+	# caddy-ratelimit isn't in Caddy's default directive order (it's a third-party plugin),
+	# so it needs an explicit position - anywhere before reverse_proxy is fine.
+	order rate_limit before basicauth
+}
+
 {$DOMAIN} {
+	# Every route here sits behind requireToken's ?token= check (see frontend/src/middleware/
+	# requireToken.ts) - this slows down anyone hammering the domain with token guesses, keyed
+	# per source IP so one attacker can't exhaust the budget for the legitimate device.
+	rate_limit {
+		zone token_guard {
+			key {remote_host}
+			events 20
+			window 5m
+		}
+	}
+
 	reverse_proxy frontend:3000
 }

@@ -6,7 +6,7 @@ export const feedRouter = Router();
 
 feedRouter.get("/telegram", async (req, res, next) => {
   try {
-    const limit = Number(req.query.limit) || 10;
+    const limit = Number(req.query.limit) || 30;
     const senders = await fetchRecentSenders(limit);
 
     // Opera Mini's proxy caches aggressively; this is a personal, per-token feed - never
