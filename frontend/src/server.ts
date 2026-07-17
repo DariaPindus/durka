@@ -6,6 +6,7 @@ import { requireToken } from "./middleware/requireToken";
 import { conversationRouter } from "./routes/conversation";
 import { feedRouter } from "./routes/feed";
 import { homeRouter } from "./routes/home";
+import { rssRouter } from "./routes/rss";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(detectClient);
 app.use("/", requireToken, homeRouter);
 app.use("/", requireToken, feedRouter);
 app.use("/", requireToken, conversationRouter);
+app.use("/", requireToken, rssRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

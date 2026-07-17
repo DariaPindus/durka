@@ -82,6 +82,44 @@ export async function fetchConversation(chatId: number, limit: number): Promise<
   return response.json() as Promise<ConversationDto>;
 }
 
+export interface RssFeedSummaryDto {
+  feedUrl: string;
+  feedTitle: string | null;
+  itemCount: number;
+  lastPublishedAt: string;
+}
+
+export interface RssEntrySummaryDto {
+  id: number;
+  title: string | null;
+  publishedAt: string;
+}
+
+export interface RssEntryDetailDto {
+  id: number;
+  feedUrl: string;
+  feedTitle: string | null;
+  title: string | null;
+  link: string | null;
+  publishedAt: string;
+  description: string | null;
+}
+
+export async function fetchRssFeeds(): Promise<RssFeedSummaryDto[]> {
+  const response = await backendFetch("/api/rss/feeds", {});
+  return response.json() as Promise<RssFeedSummaryDto[]>;
+}
+
+export async function fetchRssEntries(feedUrl: string, limit: number): Promise<RssEntrySummaryDto[]> {
+  const response = await backendFetch("/api/rss/entries", { feedUrl, limit: String(limit) });
+  return response.json() as Promise<RssEntrySummaryDto[]>;
+}
+
+export async function fetchRssEntry(id: number): Promise<RssEntryDetailDto> {
+  const response = await backendFetch(`/api/rss/entries/${id}`, {});
+  return response.json() as Promise<RssEntryDetailDto>;
+}
+
 export async function sendReply(chatId: number, text: string): Promise<ConversationMessageDto> {
   const url = new URL(`/api/messages/senders/${chatId}/reply`, config.backendUrl);
 

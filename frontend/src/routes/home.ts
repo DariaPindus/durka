@@ -5,7 +5,10 @@ export const homeRouter = Router();
 // Each entry here is a future "app source" landing page (RSS, etc. join Telegram later) -
 // just a name + path, not fetched from anywhere, since the list of sources is fixed at
 // deploy time, not data.
-const SOURCES = [{ name: "Telegram", path: "/telegram" }];
+const SOURCES = [
+  { name: "Telegram", path: "/telegram" },
+  { name: "RSS", path: "/rss" },
+];
 
 homeRouter.get("/", (req, res) => {
   const token = String(req.query.token ?? "");

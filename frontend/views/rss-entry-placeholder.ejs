@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; max-width: 700px; margin: 0 auto; padding: 12px; }
+a { color: #06c; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.ts { color: #666; font-size: 12px; }
+.note { color: #900; font-size: 12px; }
+.content { white-space: pre-wrap; margin-top: 10px; }
+</style>
+</head>
+<body>
+<p class="note">Debug view - temporarily rendering full content for the modern client path (no transliteration, real React UI comes later).</p>
+<p><a href="/rss/feed?url=<%= encodeURIComponent(entry.feedUrl) %>&token=<%= encodeURIComponent(token) %>">&larr; <%= entry.feedTitle || entry.feedUrl %></a></p>
+<h2><%= entry.title || "(untitled)" %></h2>
+<p class="ts"><%= entry.publishedAt %></p>
+<div class="content"><%= entry.description || "(no content)" %></div>
+<% if (entry.link) { %><p><a href="<%= entry.link %>">Original link</a></p><% } %>
+</body>
+</html>

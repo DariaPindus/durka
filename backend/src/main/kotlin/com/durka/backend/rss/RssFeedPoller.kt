@@ -58,6 +58,11 @@ class RssFeedPoller(
                 // for feeds that omit it. Skip an entry with neither - nothing to key it on.
                 val externalId = entry.uri ?: entry.link ?: return@forEach
 
+                // Prefer content:encoded (entry.contents) over <description> - some feeds put a
+                // short summary in description and the real full body in content:encoded. Falls
+                // back to description for the (more common) feeds that only have the latter.
+                val description = entry.contents.firstOrNull()?.value ?: entry.description?.value
+
                 repository.insert(
                     NewRssItem(
                         feedUrl = feedUrl,
@@ -66,6 +71,7 @@ class RssFeedPoller(
                         title = entry.title,
                         link = entry.link,
                         publishedAt = entry.publishedDate?.toInstant() ?: Instant.now(),
+                        description = description,
                     )
                 )
             }
