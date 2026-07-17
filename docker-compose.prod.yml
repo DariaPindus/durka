@@ -3,6 +3,7 @@ name: durka-prod
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -21,6 +22,7 @@ services:
     build:
       context: ./backend
       target: runtime
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -41,6 +43,7 @@ services:
     build:
       context: ./frontend
       target: runtime
+    restart: unless-stopped
     depends_on:
       - backend
     environment:
@@ -52,6 +55,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    restart: unless-stopped
     environment:
       DOMAIN: ${DOMAIN}
     ports:
