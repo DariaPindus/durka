@@ -16,6 +16,9 @@ telegram:
 feed:
   token: ${FEED_API_TOKEN}
 
+rss:
+  feed-urls: ${RSS_FEED_URLS:}
+
 logging:
   level:
     com.durka.backend: INFO

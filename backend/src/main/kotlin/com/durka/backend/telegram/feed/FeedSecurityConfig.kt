@@ -15,7 +15,10 @@ class FeedSecurityConfig(
     @Bean
     fun feedAccessFilter(): FilterRegistrationBean<FeedAccessFilter> {
         val registration = FilterRegistrationBean(FeedAccessFilter(properties.token, accessLogRepository))
-        registration.addUrlPatterns("/api/messages/*")
+        // One explicit pattern per module rather than a blanket "/api/*" - that would also catch
+        // /api/ping, which is deliberately unauthenticated (a plain connectivity check, see
+        // PingController/README). Add a new entry here whenever a new module's API lands.
+        registration.addUrlPatterns("/api/messages/*", "/api/rss/*")
         return registration
     }
 }

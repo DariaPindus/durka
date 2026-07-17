@@ -30,6 +30,7 @@ services:
       TELEGRAM_API_ID: ${TELEGRAM_API_ID}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
       FEED_API_TOKEN: ${FEED_API_TOKEN}
+      RSS_FEED_URLS: ${RSS_FEED_URLS}
     ports:
       - "8080:8080"
     volumes:

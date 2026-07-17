@@ -45,6 +45,10 @@ dependencies {
     implementation("it.tdlight:tdlight-natives") { artifact { classifier = "linux_amd64_gnu_ssl3" } }
     implementation("it.tdlight:tdlight-natives") { artifact { classifier = "linux_arm64_gnu_ssl3" } }
 
+    // RSS/Atom feed parsing - verified current version directly against Maven Central's search
+    // API (its own maven-metadata.xml <latest> tag can be stale, same gotcha as tdlight-java).
+    implementation("com.rometools:rome:2.1.0")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 

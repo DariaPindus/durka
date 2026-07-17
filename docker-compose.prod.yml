@@ -31,6 +31,7 @@ services:
       TELEGRAM_API_ID: ${TELEGRAM_API_ID}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
       FEED_API_TOKEN: ${FEED_API_TOKEN}
+      RSS_FEED_URLS: ${RSS_FEED_URLS}
     volumes:
       - tdlib_data:/data/tdlib
     # No "ports:" either - same reasoning as postgres. Only `frontend` calls this, over
