@@ -78,4 +78,5 @@ After a `git pull` on the server, redeploy code changes with:
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 (rebuilds whatever changed, recreates only the affected containers — safe to run even when
-unsure what changed, since `postgres`/`caddy` use fixed upstream images untouched by this).
+unsure what changed, since `postgres` uses a fixed upstream image untouched by this;
+`caddy` builds a custom image too now, for the rate-limiting plugin — see `caddy/Dockerfile`).

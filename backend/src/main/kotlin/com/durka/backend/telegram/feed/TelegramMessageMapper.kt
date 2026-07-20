@@ -16,7 +16,20 @@ object TelegramMessageMapper {
 
     fun extractText(content: TdApi.MessageContent): String = when (content) {
         is TdApi.MessageText -> content.text.text
-        else -> "(${content.javaClass.simpleName})"
+        // These all carry an optional caption alongside the media - TDLib gives it to us on
+        // the message itself (no separate call needed), we just weren't reading it before.
+        is TdApi.MessagePhoto -> withCaption(content.caption, "Photo")
+        is TdApi.MessageVideo -> withCaption(content.caption, "Video")
+        is TdApi.MessageDocument -> withCaption(content.caption, "Document")
+        is TdApi.MessageAudio -> withCaption(content.caption, "Audio")
+        is TdApi.MessageVoiceNote -> withCaption(content.caption, "Voice message")
+        is TdApi.MessageAnimation -> withCaption(content.caption, "GIF")
+        else -> "(${content.javaClass.simpleName.removePrefix("Message")})"
+    }
+
+    private fun withCaption(caption: TdApi.FormattedText?, label: String): String {
+        val text = caption?.text?.takeIf { it.isNotBlank() }
+        return if (text != null) "[$label] $text" else "($label)"
     }
 
     fun toNewFeedItem(

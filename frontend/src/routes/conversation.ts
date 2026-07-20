@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { fetchConversation, sendReply } from "../services/backendClient";
-import { transliterate } from "../services/translit";
+import { resolveUaTags, transliterate } from "../services/translit";
 
 export const conversationRouter = Router();
 
@@ -42,7 +42,7 @@ conversationRouter.post("/telegram/feed/:chatId/reply", async (req, res, next) =
   try {
     const chatId = Number(req.params.chatId);
     const token = String(req.query.token ?? "");
-    const text = String(req.body.text ?? "").trim();
+    const text = resolveUaTags(String(req.body.text ?? "").trim());
 
     if (text.length > 0) {
       await sendReply(chatId, text);
