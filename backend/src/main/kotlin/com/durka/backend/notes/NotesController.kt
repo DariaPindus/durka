@@ -50,7 +50,8 @@ class NotesController(
 ) {
 
     @GetMapping("/notes")
-    fun notes(): List<NoteDto> = noteRepository.findAll().map { it.toDto() }
+    fun notes(@RequestParam(defaultValue = "20") limit: Int): List<NoteDto> =
+        noteRepository.findAll(limit).map { it.toDto() }
 
     @PostMapping("/notes")
     fun createNote(@RequestBody request: CreateNoteRequest): NoteDto {
@@ -66,8 +67,8 @@ class NotesController(
     }
 
     @GetMapping("/tasks/dates")
-    fun taskDates(): List<TaskDateSummaryDto> =
-        taskEventRepository.findDates().map { TaskDateSummaryDto(date = it.date.toString(), count = it.count) }
+    fun taskDates(@RequestParam(defaultValue = "20") limit: Int): List<TaskDateSummaryDto> =
+        taskEventRepository.findDates(limit).map { TaskDateSummaryDto(date = it.date.toString(), count = it.count) }
 
     @GetMapping("/tasks")
     fun tasksForDate(@RequestParam date: String): List<TaskEventDto> =

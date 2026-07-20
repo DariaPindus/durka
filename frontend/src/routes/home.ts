@@ -8,6 +8,8 @@ export const homeRouter = Router();
 const SOURCES = [
   { name: "Telegram", path: "/telegram" },
   { name: "RSS", path: "/rss" },
+  { name: "Notes", path: "/notes" },
+  { name: "Events", path: "/events" },
 ];
 
 homeRouter.get("/", (req, res) => {

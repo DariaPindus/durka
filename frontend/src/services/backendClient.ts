@@ -120,6 +120,76 @@ export async function fetchRssEntry(id: number): Promise<RssEntryDetailDto> {
   return response.json() as Promise<RssEntryDetailDto>;
 }
 
+export interface NoteDto {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TaskEventType = "TASK" | "EVENT";
+
+export interface TaskDateSummaryDto {
+  date: string;
+  count: number;
+}
+
+export interface TaskEventDto {
+  id: number;
+  type: TaskEventType;
+  occursAt: string;
+  description: string;
+  durationMinutes: number | null;
+}
+
+async function backendPost<T>(path: string, body: unknown): Promise<T> {
+  const url = new URL(path, config.backendUrl);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.feedApiToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend responded ${response.status} for ${url.pathname}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function fetchNotes(limit: number): Promise<NoteDto[]> {
+  const response = await backendFetch("/api/notes/notes", { limit: String(limit) });
+  return response.json() as Promise<NoteDto[]>;
+}
+
+export async function createNote(title: string, content: string): Promise<NoteDto> {
+  return backendPost<NoteDto>("/api/notes/notes", { title, content });
+}
+
+export async function fetchTaskDates(limit: number): Promise<TaskDateSummaryDto[]> {
+  const response = await backendFetch("/api/notes/tasks/dates", { limit: String(limit) });
+  return response.json() as Promise<TaskDateSummaryDto[]>;
+}
+
+export async function fetchTasksForDate(date: string): Promise<TaskEventDto[]> {
+  const response = await backendFetch("/api/notes/tasks", { date });
+  return response.json() as Promise<TaskEventDto[]>;
+}
+
+export async function createTaskEvent(
+  type: TaskEventType,
+  occursAt: string,
+  description: string,
+  durationMinutes: number | null,
+): Promise<TaskEventDto> {
+  return backendPost<TaskEventDto>("/api/notes/tasks", { type, occursAt, description, durationMinutes });
+}
+
 export async function sendReply(chatId: number, text: string): Promise<ConversationMessageDto> {
   const url = new URL(`/api/messages/senders/${chatId}/reply`, config.backendUrl);
 

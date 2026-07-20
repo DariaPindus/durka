@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; max-width: 700px; margin: 0 auto; padding: 12px; }
+h2 { font-size: 16px; margin: 14px 0 2px; }
+a { color: #06c; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.ts { color: #666; font-size: 12px; }
+.type { color: #666; font-size: 12px; text-transform: uppercase; }
+.note { color: #900; font-size: 12px; }
+p.entry { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<p class="note">Debug view - temporarily rendering full content for the modern client path (no transliteration, real React UI comes later).</p>
+<p><a href="/events?token=<%= encodeURIComponent(token) %>">&larr; events</a></p>
+<h2><%= date %></h2>
+<% entries.forEach(function(entry) { %>
+  <p class="entry">
+    <span class="type">[<%= entry.type %>]</span> <%= entry.description %><br>
+    <span class="ts"><%= entry.occursAt %><% if (entry.durationMinutes) { %> &middot; <%= entry.durationMinutes %> min<% } %></span>
+  </p>
+<% }); %>
+</body>
+</html>

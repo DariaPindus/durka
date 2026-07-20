@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; }
+h2 { font-size: 15px; margin: 10px 0 2px; }
+a { color: #009; }
+.count { color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+<p><a href="/?token=<%= encodeURIComponent(token) %>">&lt; sources</a></p>
+<p><a href="/events/new?token=<%= encodeURIComponent(token) %>">Add +</a></p>
+<% dates.forEach(function(d) { %>
+  <h2><a href="/events/<%= d.date %>?token=<%= encodeURIComponent(token) %>"><%= d.date %></a> <span class="count">(<%= d.count %>)</span></h2>
+<% }); %>
+</body>
+</html>

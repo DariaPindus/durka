@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; }
+h2 { font-size: 15px; margin: 10px 0 2px; }
+a { color: #009; }
+.ts { color: #666; font-size: 12px; }
+.type { color: #666; font-size: 12px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<p><a href="/events?token=<%= encodeURIComponent(token) %>">&lt; events</a></p>
+<h2><%= date %></h2>
+<% entries.forEach(function(entry) { %>
+  <p>
+    <span class="type">[<%= entry.type %>]</span> <%= entry.description %><br>
+    <span class="ts"><%= entry.occursAt %><% if (entry.durationMinutes) { %> &middot; <%= entry.durationMinutes %> min<% } %></span>
+  </p>
+<% }); %>
+</body>
+</html>

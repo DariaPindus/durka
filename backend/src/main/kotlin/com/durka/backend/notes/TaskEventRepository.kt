@@ -54,15 +54,16 @@ class TaskEventRepository(private val jdbcTemplate: NamedParameterJdbcTemplate) 
      * calendar date with no timezone conversion, consistent with the rest of this app (Postgres
      * session runs UTC, nothing here does explicit AT TIME ZONE handling).
      */
-    fun findDates(): List<TaskDateSummary> =
+    fun findDates(limit: Int): List<TaskDateSummary> =
         jdbcTemplate.query(
             """
             SELECT occurs_at::date AS day, COUNT(*) AS cnt
             FROM task_event
             GROUP BY day
             ORDER BY day
+            LIMIT :limit
             """.trimIndent(),
-            MapSqlParameterSource(),
+            MapSqlParameterSource("limit", limit),
         ) { rs, _ -> TaskDateSummary(date = rs.getDate("day").toLocalDate(), count = rs.getInt("cnt")) }
 
     /** All tasks/events on one specific calendar date, time-ordered - the "day view" page. */

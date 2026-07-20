@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Feed</title>
+<style>
+body { font-family: sans-serif; font-size: 14px; }
+a { color: #009; }
+.error { color: #900; }
+label { display: block; margin-top: 8px; }
+input[type=text] { width: 90%; }
+textarea { width: 90%; height: 80px; }
+</style>
+</head>
+<body>
+<p><a href="/notes?token=<%= encodeURIComponent(token) %>">&lt; notes</a></p>
+<h2>New note</h2>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<form method="POST" action="/notes/new?token=<%= encodeURIComponent(token) %>">
+  <label>Title<br><input type="text" name="title" value="<%= title %>"></label>
+  <label>Content<br><textarea name="content"><%= content %></textarea></label>
+  <p><input type="submit" value="Save"></p>
+</form>
+</body>
+</html>

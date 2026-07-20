@@ -45,10 +45,10 @@ class NoteRepository(private val jdbcTemplate: NamedParameterJdbcTemplate) {
     }
 
     /** Most recently edited first - the natural order for a personal scratch-notes list. */
-    fun findAll(): List<NoteRow> =
+    fun findAll(limit: Int): List<NoteRow> =
         jdbcTemplate.query(
-            "SELECT id, title, content, created_at, updated_at FROM note ORDER BY updated_at DESC",
-            MapSqlParameterSource(),
+            "SELECT id, title, content, created_at, updated_at FROM note ORDER BY updated_at DESC LIMIT :limit",
+            MapSqlParameterSource("limit", limit),
         ) { rs, _ -> mapRow(rs) }
 
     fun findById(id: Long): NoteRow? =
