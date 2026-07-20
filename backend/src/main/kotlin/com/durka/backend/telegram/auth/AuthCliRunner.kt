@@ -3,6 +3,7 @@ package com.durka.backend.telegram.auth
 import com.durka.backend.telegram.TdlibSettingsFactory
 import com.durka.backend.telegram.repository.TelegramSessionStatusRepository
 import it.tdlight.client.AuthenticationSupplier
+import it.tdlight.client.SimpleTelegramClient
 import it.tdlight.client.SimpleTelegramClientFactory
 import it.tdlight.jni.TdApi
 import org.slf4j.LoggerFactory
@@ -34,11 +35,31 @@ class AuthCliRunner(
     override fun run(args: ApplicationArguments) {
         val builder = clientFactory.builder(settingsFactory.create())
 
+        // Read by the update handler below, only once an actual update arrives - which happens
+        // after builder.build() (a few lines down) has already assigned it. Kotlin doesn't allow
+        // `lateinit` on local variables, hence the nullable-plus-forward-reference.
+        var clientRef: SimpleTelegramClient? = null
+
         builder.addUpdateHandler(TdApi.UpdateAuthorizationState::class.java) { update ->
             log.info("Authorization state: {}", update.authorizationState.javaClass.simpleName)
+
+            if (update.authorizationState is TdApi.AuthorizationStateLoggingOut) {
+                // GetMe on the main thread below would otherwise just hang until its full
+                // timeout in exactly this case (confirmed by observation - LoggingOut means the
+                // stale local session is already being torn down, GetMe never completes, not
+                // even with null) - react to the state change itself instead of waiting that out.
+                log.error(
+                    "Existing session is being logged out (stale/invalidated remotely) - " +
+                        "clearing local session data. Re-run this command to log in fresh."
+                )
+                clientRef?.sendClose()
+                settingsFactory.clearSessionData()
+                exitProcess(1)
+            }
         }
 
         val client = builder.build(AuthenticationSupplier.consoleLogin())
+        clientRef = client
 
         try {
             val me = client.getMeAsync().get(10, TimeUnit.MINUTES)

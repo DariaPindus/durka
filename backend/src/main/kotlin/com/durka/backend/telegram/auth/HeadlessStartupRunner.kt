@@ -16,14 +16,18 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.system.exitProcess
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Normal headless startup: docker compose up -d.
  *
- * Reuses the session persisted by AuthCliRunner in the TDLib data volume - never prompts. If no
- * session has been established yet, or the persisted one turns out to be invalid, this fails fast
- * (FailFastClientInteraction) rather than hanging on a stdin read with no TTY attached.
+ * Reuses the session persisted by AuthCliRunner in the TDLib data volume - never prompts. Telegram
+ * is treated as an optional module, not a hard startup dependency: if there's no session yet, or
+ * the persisted one turns out to be invalid, this logs a clear error and returns *without*
+ * Telegram rather than killing the process - Tomcat and every other module (RSS, notes, ...) keep
+ * running regardless of Telegram's state. Anything that actually needs the Telegram client
+ * (SendersController) gets a clean 503 via TelegramClientHolder.requireClient() instead of the
+ * whole backend being down.
  */
 @Component
 @Profile("!auth-cli")
@@ -40,11 +44,12 @@ class HeadlessStartupRunner(
     override fun run(args: ApplicationArguments) {
         val existing = sessionRepository.findSession()
         if (existing == null) {
-            log.error(
-                "No Telegram session found. Run the auth-cli profile first: " +
+            log.warn(
+                "No Telegram session found - continuing without Telegram (RSS/notes are unaffected). " +
+                    "Run the auth-cli profile to enable it: " +
                     "docker compose run --rm -it -e SPRING_PROFILES_ACTIVE=auth-cli app"
             )
-            exitProcess(1)
+            return
         }
 
         val builder = clientFactory.builder(settingsFactory.create())
@@ -57,12 +62,32 @@ class HeadlessStartupRunner(
         // allow `lateinit` on local variables, hence the nullable-plus-!! forward reference.
         var clientRef: SimpleTelegramClient? = null
 
+        // Set when the update handler below has already logged and cleared the client for
+        // AuthorizationStateLoggingOut - lets the catch block downstream recognize "already
+        // handled" instead of logging a second, more confusing message about the same event.
+        val loggedOutHandled = AtomicBoolean(false)
+
         builder.addUpdateHandler(TdApi.UpdateAuthorizationState::class.java) { update ->
             when (update.authorizationState) {
                 is TdApi.AuthorizationStateReady ->
                     log.info("Telegram session restored, authorization ready")
+                is TdApi.AuthorizationStateLoggingOut -> {
+                    // Confirmed by observation: once this fires, GetMe below never completes (not
+                    // even with null) - react to the state itself instead of waiting out its
+                    // timeout. Deliberately does NOT clear local session data here (unlike
+                    // AuthCliRunner) - an unattended service shouldn't auto-wipe a session an
+                    // operator might still want to inspect; that stays a manual auth-cli decision.
+                    log.error(
+                        "Telegram session is being logged out (stale/invalidated remotely) - " +
+                            "continuing without Telegram. Run auth-cli to log in again."
+                    )
+                    loggedOutHandled.set(true)
+                    telegramClientHolder.clear()
+                    shutdownLatch.countDown()
+                }
                 is TdApi.AuthorizationStateClosed -> {
                     log.error("Telegram client closed unexpectedly - session may be invalid. Run auth-cli again.")
+                    telegramClientHolder.clear()
                     shutdownLatch.countDown()
                 }
                 else ->
@@ -82,15 +107,14 @@ class HeadlessStartupRunner(
             val me = client.getMeAsync().get(30, TimeUnit.SECONDS)
             if (me == null) {
                 // Same stale-session case as AuthCliRunner: Ready locally, but the first real API
-                // call reveals the session was actually ended remotely. Clear it here too so the
-                // next auth-cli run doesn't also need a manual volume wipe.
+                // call reveals the session was actually ended remotely.
                 log.error(
-                    "Existing session is invalid (likely logged out remotely) - clearing stale " +
-                        "local session data. Run the auth-cli profile again to log in fresh."
+                    "Existing Telegram session is invalid (likely logged out remotely) - " +
+                        "continuing without Telegram. Run the auth-cli profile again to log in fresh."
                 )
+                telegramClientHolder.clear()
                 client.sendClose()
-                settingsFactory.clearSessionData()
-                exitProcess(1)
+                return
             }
             log.info("Confirmed session for {} {} (id={})", me.firstName, me.lastName, me.id)
             sessionRepository.upsertReady(
@@ -99,12 +123,19 @@ class HeadlessStartupRunner(
                 verifiedAt = Instant.now(),
             )
         } catch (ex: Exception) {
-            log.error("Failed to confirm existing Telegram session. Run the auth-cli profile again.", ex)
+            if (!loggedOutHandled.get()) {
+                log.error(
+                    "Failed to confirm existing Telegram session - continuing without Telegram. " +
+                        "Run auth-cli again if this persists.",
+                    ex,
+                )
+                telegramClientHolder.clear()
+            }
             // sendClose() is fire-and-forget, unlike closeAndWait() - a hung/incomplete TDLib
             // close handshake here must never block process exit (observed during implementation:
             // a stuck closeAndWait() left the container running indefinitely instead of failing).
             client.sendClose()
-            exitProcess(1)
+            return
         }
 
         // Spring Boot's own SIGTERM shutdown hook closes the context (and this bean's factory);

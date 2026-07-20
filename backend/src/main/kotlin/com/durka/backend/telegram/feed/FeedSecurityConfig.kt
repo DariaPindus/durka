@@ -18,7 +18,7 @@ class FeedSecurityConfig(
         // One explicit pattern per module rather than a blanket "/api/*" - that would also catch
         // /api/ping, which is deliberately unauthenticated (a plain connectivity check, see
         // PingController/README). Add a new entry here whenever a new module's API lands.
-        registration.addUrlPatterns("/api/messages/*", "/api/rss/*")
+        registration.addUrlPatterns("/api/messages/*", "/api/rss/*", "/api/notes/*")
         return registration
     }
 }

@@ -2,7 +2,9 @@ package com.durka.backend.telegram
 
 import it.tdlight.client.SimpleTelegramClient
 import it.tdlight.jni.TdApi
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.web.server.ResponseStatusException
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -21,8 +23,14 @@ class TelegramClientHolder {
         this.client = client
     }
 
+    /** Telegram is an optional module - HeadlessStartupRunner calls this whenever the session
+     * turns out to be unavailable, instead of taking the whole backend down with it. */
+    fun clear() {
+        this.client = null
+    }
+
     fun requireClient(): SimpleTelegramClient =
-        client ?: throw IllegalStateException("Telegram client is not ready yet")
+        client ?: throw ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Telegram is not connected")
 
     fun sendMessage(chatId: Long, text: String): CompletableFuture<TdApi.Message> {
         val current = client
